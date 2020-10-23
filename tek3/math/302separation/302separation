@@ -1,0 +1,155 @@
+#!/usr/bin/env python3
+
+import sys
+import math
+from copy import deepcopy
+
+nameList = []
+adjencyMatrix = []
+links = []
+
+
+def option(err = 0):
+    print("USAGE\n\t./302separation file [n | p1 p2]")
+    print("DESCRIPTION\n\tfile\tfile that contains the list of Facebook connections")
+    print("\tn\tmaximum length of the paths")
+    print("\tpi\tname of someone in the file")
+    sys.exit(err)
+
+def isNumber(toTest):
+    try:
+        nb = int(toTest)
+        if nb < 0:
+            return False
+        return True
+    except ValueError:
+        return False
+
+def printNameList():
+    global nameList
+    for name in nameList:
+        print(f"{name}")
+    print()
+
+def printMatrix(matrix):
+    it = 0
+    for row in matrix:
+        for col in row:
+            it += 1
+            if it < len(matrix):
+                print(f"{col}", end=" ")
+            else:
+                print(f"{col}", end="")
+        it = 0
+        print()
+
+def getFileInfo(filename):
+    global nameList
+    try:
+        with open(filename, 'r') as f:
+            fInfo = f.read().split('\n')
+            infos = []
+            for line in fInfo:
+                data = line.split(' is friends with ')
+                if data[0] not in infos:
+                    infos.append(data[0])
+                if data[1] not in infos:
+                    infos.append(data[1])
+            for info in infos:
+                nameList.append(info)
+        nameList.sort()
+        buildAdjencyMatrix(fInfo)
+    except FileNotFoundError:
+        print("ERROR: impossible to open the file given in argv 2", file=sys.stderr)
+        raise ValueError
+    except IndexError:
+        print("ERROR: bad line in your file", file=sys.stderr)
+        raise ValueError
+
+def buildAdjencyMatrix(fileInfo):
+    global nameList, adjencyMatrix, links
+    adjencyMatrix = [[0 for col in range(len(nameList))] for row in range(len(nameList))]
+    for line in fileInfo:
+        data = line.split(' is friends with ')
+        idx1 = nameList.index(data[0])
+        idx2 = nameList.index(data[1])
+        adjencyMatrix[idx1][idx2] = 1
+        adjencyMatrix[idx2][idx1] = 1
+    links = deepcopy(adjencyMatrix)
+
+def produitMatriciel(m1, m2):
+    global nameList
+    m = [[0 for col in range(len(nameList))] for row in range(len(nameList))]
+    if len(m1[0]) != len(m2):
+        print("ERROR: bad matrice given", file=sys.stderr)
+        raise ValueError
+    for i in range(len(m1)):
+        for j in range(len(m2[0])):
+            for k in range (len(m1[0])):
+                m[i][j] += m1[i][k] * m2[k][j]
+    return m
+
+def getLinks(n):
+    global links, adjencyMatrix, nameList
+    tmp = deepcopy(adjencyMatrix)
+    copy = deepcopy(adjencyMatrix)
+
+    for it in range(n):
+        try:
+            tmp = produitMatriciel(tmp, copy)
+        except ValueError:
+            sys.exit(84)
+        for user in range(len(nameList)):
+            for idx in range(len(nameList)):
+                if tmp[user][idx] > 0 and links[user][idx] == 0 and user != idx:
+                    links[user][idx] = tmp[user][idx]
+
+def getMatrix():
+    printNameList()
+    printMatrix(adjencyMatrix)
+    print()
+    printMatrix(links)
+    sys.exit(0)
+
+def getShortConnection(name1, name2):
+    global nameList, links
+    if name1 == name2:
+        print(f"Degree of separation between {name1} and {name2}: {0}")
+    else:
+        try:
+            idx1 = nameList.index(name1)
+            idx2 = nameList.index(name2)
+        except ValueError:
+            print("ERROR: name given not in list")
+            sys.exit(84)
+        if links[idx1][idx2] == 0:
+            print(f"Degree of separation between {name1} and {name2}: -1")
+        else:
+            print(f"Degree of separation between {name1} and {name2}: {links[idx1][idx2]}")
+    sys.exit(0)
+
+def main():
+    global nameList
+    argsLen = len(sys.argv)
+
+    if "-h" in sys.argv or "--help" in sys.argv:
+        option()
+    elif argsLen < 3:
+        option(84)
+    try:
+        getFileInfo(sys.argv[1])
+    except ValueError:
+        sys.exit(84)
+    if argsLen < 4:
+        if isNumber(sys.argv[2]):
+            getLinks(int(sys.argv[2]))
+            getMatrix()
+        else:
+            option(84)
+    elif argsLen > 4:
+        option(84)
+    else:
+        getLinks(5)
+        getShortConnection(sys.argv[2], sys.argv[3])
+
+main()

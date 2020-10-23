@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <link rel="stylesheet" href="../static/css/index.css">
+        <title>{{ title }}</title>
+    </head>
+
+    <body>
+        <header>
+            <h1>EpyTodo</h1>
+            {% set navlist = [
+                ('/', 'index', 'Index'),
+                ('/products', 'products', 'Products'),
+                ('/account', 'account', 'Account')
+                ] -%}
+            <nav>
+                <ul>
+                    {% for href, id, caption in navlist %}
+                    <li><a id="{{ id|e }}" href="{{ href|e }}">{{ caption|e }}</a></li>
+                    {% endfor %}
+                </ul>
+            </nav>
+        </header>
+        <section>
+            <article>
+                <p>{{ myContent }}</p>
+            </article>
+            <aside>
+                <p>Ca marche pas comme angular c est chiant</p>
+            </aside>
+        </section>
+    </body>
+</html>

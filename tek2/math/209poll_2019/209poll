@@ -1,0 +1,71 @@
+#!/usr/bin/env python3
+import sys
+import math
+
+
+def usage(returnValue = 0):
+    print("USAGE:\n\t./209poll pSize sSize p")
+    print("DESCRIPTION:")
+    print("\tpSize\tsize of the population")
+    print("\tsSize\tsize of the sample (supposed to be representative)")
+    print("\tp\tpercentage of voting intentions for a specific candidate")
+    sys.exit(returnValue)
+
+
+def getMinValue(value):
+    return "0.00%" if value < 0 else f'{value:.2f}%'
+
+
+def getMaxValue(value):
+    return "100.00%" if value > 100 else f'{value:.2f}%'
+
+
+def process(pSize, sSize, p):
+    p /= 100
+    variance = ((p * (1 - p)) / sSize) * ((pSize - sSize) / (pSize - 1))
+    p *= 100
+    p1 = (2 * 1.96 * math.sqrt(variance)) / 2 * 100
+    p2 = (2 * 2.58 * math.sqrt(variance)) / 2 * 100
+    print(f'Population size:\t\t{pSize:.0f}')
+    print(f'Sample Size:\t\t\t{sSize:.0f}')
+    print(f'Voting intentions:\t\t{p:.2f}%')
+    print(f'Variance:\t\t\t{variance:.6f}')
+    print(f'95% confidence interval:\t[{getMinValue(p - p1):s}; {getMaxValue(p + p1):s}]')
+    print(f'99% confidence interval:\t[{getMinValue(p - p2):s}; {getMaxValue(p + p2):s}]')
+    return 0  
+
+
+def errorHandling():
+    try:
+        pSize = int(sys.argv[1])
+        sSize = int(sys.argv[2])
+        p = float(sys.argv[3])
+        if pSize <= 0 or sSize >= pSize or sSize <= 0:
+            return False
+        elif p < 0 or p > 100:
+            return False
+        elif pSize - 1 < 0:
+            return False
+    except ValueError:
+        return False
+    return True
+
+
+def main():
+    if len(sys.argv) != 4:
+        if "-h" in sys.argv or "--help" in sys.argv:
+            usage()
+        else:
+            usage(84)
+    else:
+        if not errorHandling():
+            print("ERROR: bad arguments given. Try ./209poll -h", file=sys.stderr)
+            sys.exit(84)
+        try:
+            process(int(sys.argv[1]), int(sys.argv[2]), float(sys.argv[3]))
+        except ValueError:
+            sys.exit(84)
+        sys.exit(0)
+
+
+main()

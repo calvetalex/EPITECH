@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+import sys
+import math
+
+def usage(returnValue):
+    print("USAGE:\n\t./205IQ u s [IQ1] [IQ2]")
+    print("DESCRIPTION:")
+    print("\tu\tmean\n\ts\tstandard deviation")
+    print("\tIQ1\tminimum IQ\n\tIQ2\tmaximum IQ")
+    sys.exit(returnValue)
+
+def calc(u, s, i):
+    exponent = ((i - u) ** 2) / (2 * (s ** 2))
+    return (1/ (s * math.sqrt(2 * math.pi))) * math.exp(-exponent)
+
+def isValidIQ(iq):
+    if iq < 0 or iq > 200:
+        print("ERROR: invalid IQ given, it must be between 0 and 200", file=sys.stderr)
+        return False
+    return True
+
+def minimumIq(u, s, minIq):
+    n = 0.0
+    i = 0.0
+    while (i < minIq):
+        n += calc(u, s, i)
+        i += 0.01
+    print(f'{n:.1f}% of people have an IQ inferior to {minIq}')
+    sys.exit(0)
+
+def betweenIq(u, s, minIq, maxIq):
+    if minIq > maxIq:
+        print("ERROR: IQ1 can't be greater than IQ2", file=sys.stderr)
+        exit(84)
+    n = 0.0
+    i = minIq * 1.0
+    while (i < maxIq):
+        n += calc(u, s, i)
+        i += 0.01
+    print(f'{n:.1f}% of people have an IQ between {minIq} and {maxIq}')
+
+def densityIq(u, s):
+    for i in range(201):
+        res = calc(u, s, i)
+        print(f'{i:.0f} {res:.5f}')
+    sys.exit(0)
+
+def main():
+    try:
+        if "-h" in sys.argv or "--help" in sys.argv:
+            usage(0)
+        if len(sys.argv) < 3 or len(sys.argv) > 5:
+            print("ERROR: try ./205IQ -h or ./205IQ --help to find out how to use this program", file=sys.stderr)
+            sys.exit(84)
+        u = float(sys.argv[1])
+        s = float(sys.argv[2])
+        if u < 0 or u > 200 or s <= 0:
+            print("ERROR: try ./205IQ -h or ./205IQ --help to find out how to use this program", file=sys.stderr)
+            sys.exit(84)
+        if len(sys.argv) == 3:
+            densityIq(u, s)
+        elif len(sys.argv) == 4:
+            minIq = int(sys.argv[3])
+            if isValidIQ(minIq):
+                minimumIq(u, s, minIq)
+            else:
+                print("ERROR: try ./205IQ -h or ./205IQ --help to find out how to use this program", file=sys.stderr)
+                sys.exit(84)
+        elif len(sys.argv) == 5:
+            minIq = int(sys.argv[3])
+            maxIq = int(sys.argv[4])
+            if isValidIQ(minIq) and isValidIQ(maxIq) and minIq < maxIq:
+                betweenIq(u, s, int(sys.argv[3]), int(sys.argv[4]))
+            else:
+                print("ERROR: try ./205IQ -h or ./205IQ --help to find out how to use this program", file=sys.stderr)
+                sys.exit(84)
+        sys.exit(0)
+    except ValueError:
+        print("ERROR: try ./205IQ -h or ./205IQ --help to find out how to use this program", file=sys.stderr)
+        sys.exit(84)
+
+main()

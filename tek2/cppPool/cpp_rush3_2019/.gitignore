@@ -1,0 +1,23 @@
+#put it in the root
+
+#ignore lib and objects
+*.[oa]
+*.gcno
+*.gcda
+
+#ignore vscode files
+.v*
+vgcore*
+
+#ignore shell testing
+*.sh
+
+#ignore temp files
+*~
+
+#uncomment next line if you don t need to push main.c file
+#main.cpp
+a.out
+config
+MyGKrellm
+config.config

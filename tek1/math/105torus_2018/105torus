@@ -1,0 +1,77 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import sys
+import math
+
+def disp_h():
+    print("USAGE\n\t./105torus opt a0 a1 a2 a3 a4 n\n")
+    print("DESCRIPTION\n\topt\tmethod option:")
+    print("\t\t\t1 for the bisection option\n\t\t\t2 for Newton's method")
+    print("\t\t\t3 for the secant method")
+    print("\ta[0-4]\tcoefficients of the equation")
+    print("\tn\tprecision (the application of the polynomial to the solution should\
+                           be smaller than 10^-n")
+
+def poly(argv, x):
+    res = float(argv[6]) * math.pow(x, 4) \
+    + float(argv[5]) * math.pow(x , 3) \
+    + float(argv[4]) * math.pow(x , 2) \
+    + float(argv[3]) * x \
+    + float(argv[2])
+    return res
+    
+def deriv(argv, x):
+    res = 4 * float(argv[6]) * math.pow(x, 3) \
+    + 3 * float(argv[5]) * math.pow(x, 2) \
+    + 2 * float(argv[4]) * x \
+    + float(argv[3])
+    return res
+
+def newton(argv):
+    nb2 = 0.5
+    c = 0
+    deci = int(argv[7])
+    preci = 10 ** -int(argv[7])
+    while True:
+        c = nb2 - (poly(argv, nb2) / deriv(argv, nb2))
+        print("x =", round(nb2, deci))
+        if (abs(nb2 - c) < preci):
+            return c
+        else:
+            nb2 = c
+    return 0
+
+def bisec(argv):
+    nb1 = 0
+    nb2 = 1
+    c = 0
+    decimal = int(argv[7])
+    precision = 10 ** (-int(argv[7]))
+    while True:
+        c = (nb1 + nb2) / 2
+        print("x =", round(c, decimal))
+        if poly(argv, c) == 0 or (nb2 - nb1) / 2 < precision:
+            return c
+        if poly(argv, c) * poly(argv, nb1) >= 0:
+            nb1 = c
+        else:
+            nb2 = c
+    return 0
+    
+def main():
+    if (len(sys.argv) == 2):
+        if (sys.argv[1] == "-h"):
+            disp_h()
+        else:
+            return (84)    
+    elif (len(sys.argv) == 8):
+        if (int(sys.argv[1]) == 1):
+            bisec(sys.argv)
+        elif (int(sys.argv[1]) == 2):
+            newton(sys.argv)
+        exit (0)
+    else:
+        exit (84)
+
+main()

@@ -1,0 +1,146 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import math
+import sys
+
+def disp_h():
+    print("USAGE\n\t./104intersection opt xp yp zp xv yv zv p\n")
+    print("DESCRIPTION\n\topt\t\tsurface option: 1 for a sphere, 2 for a cylinder, 3 for a cone")
+    print("\t(xp, yp, zp)\tcoordinates of a point by wich the light ray passes through")
+    print("\t(xv, yv, zv)\tcoordinates of a vector parallel to the light ray")
+    print("\tp\t\tparameter: radius of the sphere, radius of the cylinder, or\
+          \t\t\tangle formed by the cone and the Z-axis")
+
+def delta(a, b, c):
+    d = (b*b) - (4 * a * c)
+    return (d)
+    
+def spheric(xp, yp, zp, xv, yv, zv ,r):
+    print("Sphere of radius {:.0f}".format(r))
+    print("Line passing through the point ({:.0f}, {:.0f}, {:.0f}) and parallel to \
+the vector ({:.0f}, {:.0f}, {:.0f})".format(xp, yp, zp, xv, yv, zv))
+    a = (xv * xv) + (yv + yv) + (zv * zv)
+    b = (2 * xp * xv) + (2 * yp * yv) + (2 * zp * zv)
+    c = (xp * xp) + (yp *yp) + (zp * zp) - (r * r)
+    d = delta(a, b, c)
+    if (d > 0):
+        t1 = (-b - math.sqrt(d)) / (2 * a)
+        t2 = (-b + math.sqrt(d)) / (2 * a)
+        x1 = xp + (xv * t1)
+        y1 = yp + (yv * t1)
+        z1 = zp + (zv * t1)
+        x2 = xp + (xv * t2)
+        y2 = yp + (yv * t2)
+        z2 = zp + (zv * t2)
+        print("2 intersection points:")
+        print("({:.3f}, {:.3f}, {:.3f})".format(x1, y1, z1))
+        print("({:.3f}, {:.3f}, {:.3f})".format(x2, y2, z2))
+        return 0
+    elif (d == 0):
+        t = -b / (2 * a)
+        x = xp + (xv * t)
+        y = yp + (yv * t)
+        z = zp + (zv * t)
+        print("1 intersection point:")
+        print("({:.3f}, {:.3f}, {:.3f})".format(x, y, z))
+        return 0
+    else :
+        print("No intersection point.")
+    return 0
+
+def cynlidric(xp, yp, zp, xv, yv, zv, r):
+    print("Cylinder of radius {:.0f}".format(r))
+    print("Line passing through the point ({:.0f}, {:.0f}, {:.0f}) and parallel to \
+the vector ({:.0f}, {:.0f}, {:.0f})".format(xp, yp, zp, xv, yv, zv))
+    a = (xv * xv) + (yv * yv)
+    b = (2 * xp * xv) + (2 * yp * yv)
+    c = (xp * xp) + (yp * yp) - (r * r)
+    d = delta(a, b , c)
+    if  (d > 0):
+        t2 = (-b - math.sqrt(d)) / (2 * a)
+        t1 = (-b + math.sqrt(d)) / (2 * a)
+        x1 = xp + xv * t1
+        y1 = yp + yv * t1
+        z1 = zp + zv * t1
+        x2 = xp + xv * t2
+        y2 = yp + yv * t2
+        z2 = zp + zv * t2
+        print("2 intersection points:")
+        print("({:.3f}, {:.3f}, {:.3f})".format(x1, y1, z1))
+        print("({:.3f}, {:.3f}, {:.3f})".format(x2, y2, z2))
+    elif (d == 0):
+        t = -b / (2 * a)
+        x = xp + xv * t
+        y = yp + yv * t
+        z = zp + zv * t
+        print("1 intersection point:")
+        print("({:.3f}, {:.3f}, {:.3f})".format(x, y, z))
+    else:
+        print("No intersection point.")
+    return 0
+
+
+def conic(xp, yp, zp, xv, yv, zv, alpha):
+    print("Cone with a {:.0f} degree angle".format(alpha))
+    print("Line passing through the point ({:.0f}, {:.0f}, {:.0f}) and parallel to \
+the vector ({:.0f}, {:.0f}, {:.0f})".format(xp, yp, zp, xv, yv, zv))
+    a = (xv * xv) + (yv* yv) - math.pow((zv * math.tan(alpha)), 2)
+    b = (2* xp * xv) + (2 * yp * yv) + (2 * zp * zv * math.pow(math.tan(alpha), 2))
+    c = (xp * xp) + (yp * yp) - ((zp * zp) * math.pow(math.tan(alpha), 2))
+    d = delta(a, b, c)
+    if  (d > 0):
+        t1 = (-b - math.sqrt(d)) / (2 * a)
+        t2 = (-b + math.sqrt(d)) / (2 * a)
+        x1 = xp + xv * t1
+        y1 = yp + yv * t1
+        z1 = zp + zv * t1
+        x2 = xp + xv * t2
+        y2 = yp + yv * t2
+        z2 = zp + zv * t2
+        print("2 intersection points:")
+        print("({:.3f}, {:.3f}, {:.3f})".format(x1, y1, z1))
+        print("({:.3f}, {:.3f}, {:.3f})".format(x2, y2, z2))
+    elif (d == 0):
+        t = -b / (2 * a)
+        x = xp + xv * t
+        y = yp + yv * t
+        z = zp + zv * t
+        print("1 intersection point:")
+        print("({:.3f}, {:.3f}, {:.3f})".format(x, y, z))
+    else:
+        print("No intersection point.")
+    return 0
+
+def main():
+    if (len(sys.argv) == 2):
+        if (sys.argv[1] == "-h"):
+            disp_h()
+    elif (len(sys.argv) == 9):
+        for i in range(1, 8):
+            try:
+                int(sys.argv[i])
+            except ValueError:
+                print("Invalid syntax: try ./104intersection -h")
+                exit (84)
+        xp = int(sys.argv[2])
+        yp = int(sys.argv[3])
+        zp = int(sys.argv[4])
+        xv = int(sys.argv[5])
+        yv = int(sys.argv[6])
+        zv = int(sys.argv[7])
+        opt = sys.argv[1]
+        p = int(sys.argv[8])
+        if (opt == "1"):
+            spheric(xp, yp, zp, xv, yv, zv, p)
+        elif (opt == "2"):
+            cynlidric(xp, yp ,zp, xv, yv, zv, p)
+        elif (opt == "3"):
+            conic(xp, yp, zp, xv, yv, zv, p)
+        else:
+            print("Invalid syntax: try ./104intersection -h")
+            exit (84)
+    else:
+        print("Invalid input: try ./104intersection -h")
+        exit (84)
+main()

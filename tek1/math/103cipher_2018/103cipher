@@ -1,0 +1,159 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import math
+import sys
+
+def optionh():
+    print("USAGE\n\
+    ./103cipher message key flag")
+    print("DESCRIPTION\n\
+    message        a message, made of ASCII characters\n\
+    key            the encryption key, made of ASCII characters\n\
+    flag           0 for the message to be encrypted, 1 to be decrypted\n")
+
+def matricekey(key):
+    length = len(key)
+    cols = math.ceil(math.sqrt(length))
+    lines = cols
+    k = 0
+    my_matrice = [[0 for x in range(cols)] for y in range(lines)]
+    for i in range(lines):
+        for j in range(cols):
+            if k < len(key):
+                my_matrice[i][j] = ord(key[k])
+                k+= 1
+            continue
+    print("Key matrix:")
+    for a in range(cols):
+        for b in range(lines):
+            if b < lines - 1:
+                print(my_matrice[a][b],"\t", sep='', end='')
+            else:
+                print(my_matrice[a][b])
+    print()
+    return (my_matrice)
+
+def matricemess(message, lineKM):
+    length = len(message)
+    column = lineKM
+    line = math.ceil(length/lineKM)  + 1
+    my_message = [[0 for x in range(column)] for y in range(line)]
+    k = 0
+    for i in range(line):
+        for j in range(column):
+            if k < len(message):
+                my_message[i][j] = ord(message[k])
+                k+= 1
+            continue
+    return (my_message)
+
+def encrypt(message_matrice, key_matrice, lineKM, lineMM):
+    colsfinal = lineKM
+    linesfinal = lineMM
+    final_matrice = [[0 for x in range(colsfinal)] for y in range(linesfinal)]
+    nb = 0
+    for i in range(linesfinal):
+        for j in range(lineKM):
+            for k in range(lineKM):
+                nb = nb + (message_matrice[i][k] * key_matrice[k][j])
+            final_matrice[i][j] = nb
+            nb = 0
+    print("Encrypted message:")
+    for w in range(linesfinal):
+        for x in range(colsfinal):
+            if (w < (linesfinal - 1) or x < (colsfinal - 1)):
+                print(final_matrice[w][x], " ", sep='', end='')
+            else:
+                print(final_matrice[w][x])
+    return 0
+
+def revmatrice(key, lineKM):
+    k = 0
+    key_matrice = [[0 for x in range(lineKM)] for y in range(lineKM)]
+    delta = 0
+    key_revmatrice = [[0 for x in range(lineKM)] for y in range(lineKM)]
+
+    for i in range(lineKM):
+        for j in range(lineKM):
+            if k < len(key):
+                key_matrice[i][j] = ord(key[k])
+                k+= 1
+            continue
+    if lineKM == 1:
+        key_revmatrice[0][0] = 1 / key_matrice[0][0]
+    elif lineKM == 2:
+        delta = key_matrice[0][0] * key_matrice[1][1] - key_matrice[0][1] * key_matrice[1][0]
+        if delta == 0:
+            exit(84)
+        key_revmatrice[0][0] = key_matrice[1][1] / delta
+        key_revmatrice[0][1] = -key_matrice[0][1] / delta
+        key_revmatrice[1][0] = -key_matrice[1][0] / delta
+        key_revmatrice[1][1] = key_matrice[0][0] / delta
+    elif lineKM == 3:
+        delta = key_matrice[0][0] * (key_matrice[1][1] * key_matrice[2][2] - key_matrice[1][2] * key_matrice[2][1]) - key_matrice[0][1] * (key_matrice[1][0] * key_matrice[2][2] - key_matrice[1][2] * key_matrice[2][0]) + key_matrice[0][2] * (key_matrice[1][0] * key_matrice[2][1] - key_matrice[1][1] * key_matrice[2][0])
+        if delta == 0:
+            sys.exit(84)
+        key_revmatrice[0][0] = (key_matrice[1][1] * key_matrice[2][2] - key_matrice[1][2] * key_matrice[2][1]) / delta
+        key_revmatrice[0][1] = -(key_matrice[0][1] * key_matrice[2][2] - key_matrice[0][2] * key_matrice[2][1]) / delta
+        key_revmatrice[0][2] = (key_matrice[0][1] * key_matrice[1][2] - key_matrice[0][2] * key_matrice[1][1]) / delta
+        key_revmatrice[1][0] = -(key_matrice[1][0] * key_matrice[2][2] - key_matrice[1][2] * key_matrice[2][0]) / delta
+        key_revmatrice[1][1] = (key_matrice[0][0] * key_matrice[2][2] - key_matrice[0][2] * key_matrice[2][0]) / delta
+        key_revmatrice[1][2] = -(key_matrice[0][0] * key_matrice[1][2] - key_matrice[0][2] * key_matrice[1][0]) / delta
+        key_revmatrice[2][0] = (key_matrice[1][0] * key_matrice[2][1] - key_matrice[1][1] * key_matrice[2][0]) / delta
+        key_revmatrice[2][1] = -(key_matrice[0][0] * key_matrice[2][1] - key_matrice[0][1] * key_matrice[2][0]) / delta
+        key_revmatrice[2][2] = (key_matrice[0][0] * key_matrice[1][1] - key_matrice[0][1] * key_matrice[1][0]) / delta
+    else:
+        exit(84)
+    print("Key matrice :")
+    for a in range(lineKM):
+        for b in range(lineKM):
+            if b < lineKM - 1:
+                print(key_revmatrice[a][b],"\t", sep='', end='')
+            else:
+                print(key_revmatrice[a][b])
+    return(key_revmatrice)
+
+def decrypt(message_matrice, key_revmatrice, lineKM, lineMM):
+    colsfinal = lineKM
+    linesfinal = lineMM
+    final_matrice = [[0 for x in range(colsfinal)] for y in range(linesfinal)]
+    nb = 0
+    for i in range(lineMM):
+        for j in range(lineKM):
+            for k in range(lineKM):
+                nb = round(nb + (message_matrice[i][k] * key_revmatrice[k][j]))
+            final_matrice[i][j] = nb
+        nb = 0
+    print("Decrypted message:", final_matrice)
+    for w in range(linesfinal):
+        for x in range(colsfinal):
+            if (w < (linesfinal - 1) or x < (colsfinal - 1)):
+                print(chr(final_matrice[w][x]), sep='', end='')
+            else:
+                print(chr(final_matrice[w][x]))
+    return 0
+
+def main():
+    if (len(sys.argv) == 2):
+        option = sys.argv[1]
+        if (option == "-h"):
+            optionh()
+    elif(len(sys.argv) == 4):
+        message = sys.argv[1]
+        key = sys.argv[2]
+        flag = sys.argv[3]
+        lineKM = math.ceil(math.sqrt(len(key)))
+        lineMM = math.ceil(len(message)/lineKM)
+        if flag == "0":
+            message_matrice = matricemess(message, lineKM)
+            key_matrice = matricekey(key)
+            encrypt(message_matrice, key_matrice, lineKM, lineMM)
+        elif flag == "1":
+            key_revmatrice = revmatrice(key, lineKM)
+            message_matrice = matricemess(message, lineKM)
+            decrypt(message_matrice, key_revmatrice, lineKM, lineMM)
+    else:
+        exit (84)
+    
+main()

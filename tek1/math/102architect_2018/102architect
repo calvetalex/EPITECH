@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+import sys
+import math
+
+def error():
+    return 84
+
+def disp_vect(x, y, option, x_vect, y_vect):
+    if (option == '-t'):
+        print("Translation along vector ({:.0f}, {:.0f})".format(x_vect, y_vect))
+        print("1.00 0.00 {:.2f}".format(x_vect))
+        print("0.00 1.00 {:.2f}".format(y_vect))
+        print("0.00 0.00 1.00")
+        x_final = float(x + x_vect)
+        y_final = float(y + y_vect)
+        print("({:.0f}, {:.0f}) => ({:.2f}, {:.2f})".format(x, y, x_final, y_final))
+        return 0
+    if (option == '-z'):
+        print("Scaling by factors {:.0f} and {:.0f}".format(x_vect, y_vect))
+        print("{:.2f} 0.00 0.00".format(x_vect))
+        print("0.00 {:.2f} 0.00".format(y_vect))
+        print("0.00 0.00 1.00")
+        x_final = x * x_vect
+        y_final = y * y_vect
+        print("({:.0f}, {:.0f}) => ({:.2f}, {:.2f})".format(x, y, x_final, y_final))
+        return 0
+
+def disp_trigo(x, y, option, angle):
+    if (option == '-r'):
+        print("Rotation by a {:.0f} degree angle".format(angle))
+        cost = math.cos(angle * math.pi / 180)
+        sint = math.sin(angle * math.pi / 180)
+        print("{:.2f} {:.2f} 0.00".format(cost, -sint))
+        print("{:.2f} {:.2f} 0.00".format(sint, cost))
+        print("0.00 0.00 1.00")
+        x_final = (cost * x) + (-sint * x)
+        y_final = (sint * y) + (cost * y)
+        print("({:.0f}, {:.0f}) => ({:.2f}, {:.2f})".format(x, y, x_final, y_final))
+        return 0
+    if (option == '-s'):
+        print("Reflection over an axis with an inclination angle of {:.0f} degrees".format(angle))
+        cost = math.cos(2 * (angle * math.pi / 180))
+        sint = math.sin(2 * (angle * math.pi / 180))
+        print("{:.2f} {:.2f} 0.00".format(cost, sint))
+        print("{:.2f} {:.2f} 0.00".format(sint, -cost))
+        print("0.00 0.00 1.00")
+        x_final = (cost * x) + (sint *y)
+        y_final = (sint * y) + (-cost * y)
+        print("({:.0f}, {:.0f}) => ({:.2f}, {:.2f})".format(x, y, x_final, y_final))
+        return 0
+
+def disp_usage():
+    "this function disp how to use the file 102architect"
+    print("USAGE\n    ./102architect x y transfo1 arg11 [arg12] [trasnfo 2 arg12 [arg22]] ...")
+    print("\nDESCRIPTION\n    x    abscissea of the original point\n\
+    y    ordinate of the original point")
+    print("\n    transfo arg1 [arg2]\n    -t i j    translation along vector (i, j)\n\
+    -z m n    scaling by factors m (x-axis) and n (y-axis)\n\
+    -r d      rotation centered in 0 by a d degree angle\n\
+    -s d      reflection over the axis passing through 0 with an inclination\n\
+              angle of d degree")
+
+if (len(sys.argv) == 2):
+    if (sys.argv[1] == '-h'):
+        disp_usage()
+    else:
+        error()
+elif (len(sys.argv) > 2):
+    x = int(sys.argv[1])
+    y = int(sys.argv[2])
+    option = sys.argv[3]
+    if (option == '-t' or option == '-z'):
+        x_vect = int(sys.argv[4])
+        y_vect = int(sys.argv[5])
+        disp_vect(x, y , option, x_vect, y_vect)
+    elif (option == '-r' or option == '-s'):
+        angle = int(sys.argv[4])
+        disp_trigo(x, y, option, angle)

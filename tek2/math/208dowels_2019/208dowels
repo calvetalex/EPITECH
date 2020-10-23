@@ -1,0 +1,132 @@
+#!/usr/bin/env python3
+
+import sys
+import math
+
+distriTable = [
+    [0.00, 0.02,0.06, 0.15, 0.27, 0.45, 0.71, 1.07, 1.64, 2.71, 3.84, 5.41, 6.63],
+    [0.02, 0.21, 0.45, 0.71, 1.02, 1.39, 1.83, 2.41, 3.22, 4.61, 5.99, 7.82, 9.21],
+    [0.11, 0.58, 1.01, 1.42, 1.87, 2.37, 2.95, 3.66, 4.64, 6.25, 7.81, 9.84, 11.34],
+    [0.30, 1.06, 1.65, 2.19, 2.75, 3.36, 4.04, 4.88, 5.99, 7.78, 9.49, 11.67, 13.28],
+    [0.55, 1.61, 2.34, 3.00, 3.66, 4.35, 5.13, 6.06, 7.29, 9.24, 11.07, 13.39, 15.09],
+    [0.87, 2.20, 3.07, 3.83, 4.57, 5.35, 6.21, 7.23, 8.56, 10.64, 12.59, 15.03, 16.81],
+    [1.24, 2.83, 3.82, 4.76, 5.49, 6.35, 7.28, 8.38, 9.80, 12.02, 14.07, 16.62, 18.48],
+    [1.65, 3.49, 4.59, 5.53, 6.42, 7.34, 8.35, 9.52, 11.03, 13.36, 15.51, 18.17, 20.09],
+    [2.09, 4.17, 5.38, 6.39, 7.36, 8.34, 9.41, 10.66, 12.24, 14.68, 16.92, 19.68, 21.67],
+    [2.56, 4.87, 6.18, 7.27, 8.30, 9.34, 10.47, 11.78, 13.44, 15.99, 18.31, 21.16, 23.21]
+]
+
+
+validity = [
+    "P > 99%",
+    "90% < P < 99%",
+    "80% < P < 90%",
+    "70% < P < 80%",
+    "60% < P < 70%",
+    "50% < P < 60%",
+    "40% < P < 50%",
+    "30% < P < 40%",
+    "20% < P < 30%",
+    "10% < P < 20%",
+    "%5 < P < 10%",
+    "%2 < P < 5%",
+    "1% < P < 2%",
+    "P < 1%"
+]
+
+
+def usage(returnValue = 0):
+    print("USAGE:\n\t./208dowels 00 01 02 03 04 05 06 07 08")
+    print("DESCRIPTION:\n\t0i\tsize of the observed class")
+    sys.exit(returnValue)
+
+
+def coefBino(n, k):
+    try:
+        return math.factorial(n) / (math.factorial(k) * math.factorial(n - k))
+    except ZeroDivisionError:
+        return 0
+
+
+def binomial(n, k, p):
+    return coefBino(n, k) * math.pow(p, k) * math.pow(1 - p, n - k)
+
+
+def getFitValidity(v, d):
+    try:
+        for i, l in enumerate(distriTable[v - 1]):
+            if d < l:
+                return i
+        return -1
+    except IndexError:
+        return -1
+
+
+def printFct(v, c, argv, tx):
+    if v < 1:
+        print(f'{argv[0]:s}: invalid degree of freedom', file=sys.stderr)
+        sys.exit(84)
+    arr = [['  x'], [' Ox'], [' Tx']]
+    for cl in c:
+        col = ['%d' % cl[0], '%d' % sum([argv[i] for i in cl]), '%.1f' % sum([tx[i] for i in cl])]
+        if len(cl) > 1 or cl[0] == 8:
+            col[0] += ('-%d' % cl[-1]) if cl[-1] != 8 else '+'
+        for i, row in enumerate(col):
+            arr[i].append(row)
+    for i, row in enumerate(['Total', '100', '100']):
+        arr[i].append(row)
+    for row in arr:
+        print('|'.join([' {:s}'.format((str(cell)+ "\t") if (i != len(row) - 1) else str(cell)) for i, cell in enumerate(row)]))
+
+
+def calc():
+    args = [int(arg) for arg in sys.argv[1:]]
+    p = sum([i * s for i, s in enumerate(args)]) / 10000
+    tx = [100 * binomial(100, i, p) for i in range(8)]
+    tx.append(100 - sum(tx))
+    c = [[i] for i in range(9)]
+    i = 0
+    while i < len(c):
+        if sum([args[j] for j in c[i]]) >= 10:
+            i += 1
+            continue
+        if (i + 1 == len(c)) or (i > 0 and sum([args[j] for j in c[i - 1]]) < sum(args[j] for j in c[i + 1])):
+            c[i - 1] += c[i]
+            del c[i]
+            i -= 1
+        else:
+            c[i] += c[i + 1]
+            del c[i + 1]
+    d = sum([pow(sum([args[i] - tx[i] for i in cl]), 2) / sum([tx[i] for i in cl]) for cl in c])
+    v = len(c) - 2
+    printFct(v, c, args, tx)
+    print(f"Distribution:\t\tB(100, {p:.4f})")
+    print(f"Chi-squared:\t\t{d:.3F}")
+    print(f"Degrees of freedom:\t{v:d}")
+    print(f"Fit validity:\t\t{validity[getFitValidity(v, d)]:s}")
+    sys.exit(0)
+
+
+def main():
+    if "--help" in sys.argv or "-h" in sys.argv:
+        if len(sys.argv) == 2:
+            usage()
+        else:
+            usage(84)
+    if len(sys.argv) != 10:
+        print("208dowels: error in arguments given. Try ./208dowels -h or ./208dowels --help", file=sys.stderr)
+        sys.exit(84)
+    try:
+        val = 0
+        for arg in sys.argv[1:]:
+            val += int(arg)
+        if val != 100:
+            print(f"208dowels: sum of arguments must be 100 and not {val}")
+            sys.exit(84)
+        calc()
+    except ValueError:
+        print("208dowels: arguments given must be integers", file=sys.stderr)
+        sys.exit(84)
+
+
+main()

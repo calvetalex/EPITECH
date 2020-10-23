@@ -1,0 +1,202 @@
+#!/usr/bin/env python3
+
+import sys
+
+##
+## Class Rule
+## get rule informations:
+##      name
+##      dependencies
+##      c files used
+## methods:
+##      isDependency => check if rule has dependencies
+##      Override __eq__ => compare 2 node
+##
+
+class Rule:
+    def __init__(self, line):
+        spl = line.split(":")
+        self.name = spl[0].strip()
+        self.dependencies = []
+        self.cFile = ""
+        for dependency in spl[1].split():
+            dependency = dependency.strip()
+            if not dependency:
+                continue
+            self.dependencies.append(dependency)
+
+    def isDependency(self, dependency):
+        if dependency in self.dependencies:
+            return 1
+        return 0
+
+    def __eq__(self, other):
+        return self.name == other
+
+
+##
+## printErr
+## print a message on stderr
+## params:
+##      msg => msg to print on stdr, default to "ERROR: exit program"
+##
+def printErr(msg = "ERROR: exit program"):
+    print(msg, file=sys.stderr)
+
+##
+## parseFile
+## read a file and parse informations to create Rule elements
+## params:
+##      filename => file to read and use
+##
+def parseFile(filename):
+    elems, cFiles = [], []
+    files = set()
+    try:
+        with open(filename, "r") as f:
+            for line in f.readlines():
+                line = line.strip()
+                if not line or "#" in line and line[0] == "#":
+                    continue
+                if ":" in line:
+                    files = files.union(set(filter(lambda x: x, [elem.strip() for elem in line.replace(":", " ").split()])))
+                    elems.append(Rule(line))
+                else:
+                    elems[-1].cFile = line
+                    cFiles.append(line.split())
+    except FileNotFoundError:
+        printErr("ERROR: bad file given")
+        raise ValueError
+    except IndexError:
+        printErr("ERROR: bad file typo")
+        raise ValueError
+    return elems, list(files), cFiles
+
+
+##
+## buildMatrice
+## create adjency matrice by looking in Rule elements
+## params:
+##      elems => Rule elements
+##      files => files present in Makefile given by user
+##
+def buildMatrice(elems, files):
+    m = []
+    for file in files:
+        try:
+            if file not in elems:
+                m.append([0 for _ in range(0, len(files))])
+            else:
+                elem = elems[elems.index(file)]
+                m.append([elem.isDependency(f) for f in files])
+        except IndexError:
+            printErr("ERROR: value out of range, please check your Makefile")
+            raise ValueError
+    return m
+
+##
+## findFile
+## get file utilisation in rules
+## params:
+##      i => idx of element
+##      m => adjency matrice
+##      files => list of files present in Makefile given
+##
+def findFile(i, m, files):
+    for j, res in enumerate(files):
+        if m[j][i] == 1:
+            print(" -> " + files[j], end="")
+            findFile(j, m, files)
+            return
+
+##
+## displayMakefile
+## display adjency matrice and rules
+## params:
+##      m => adjency matrice
+##      files => list of files in the Makefile
+##
+def displayMakfile(m, files):
+    for line in m:
+        print("[" + " ".join(str(elem) for elem in line) + "]")
+    print()
+    for i, file in enumerate(files):
+        for j, res in enumerate(files):
+            if m[j][i] == 1:
+                print(files[i], end=" -> ")
+                print(files[j], end="")
+                findFile(j, m, files)
+                print()
+
+##
+## getCFile
+## print file dependencies
+## params:
+##      file => file to found
+##      elems => list of Rule
+##
+def getCFile(file, elems):
+    toPrint = []
+    for elem in elems:
+        if elem == file or elem.isDependency(file):
+            toPrint.append(elem.cFile)
+    print("\n".join(sorted(toPrint)))
+
+##
+## getCFiles
+## find all file dependencies
+## params:
+##      i => idx of current dependency
+##      m => adjency matrice
+##      files => list of all files used in makefile
+##      elems => list of Rules
+##
+def getCFiles(i, m, files, elems):
+    for j, res in enumerate(files):
+        if m[j][i] == 1:
+            getCFile(files[j], elems)
+            getCFiles(j, m, files, elems)
+
+##
+## displayCFile
+## display all utilisations of a file and the dependencies by calling getCFiles on each file in the list
+## params:
+##      m => adjency matrice
+##      file => file to found
+##      files => list of all the files
+##      elems => list of Rule
+##
+def displayCFile(m, file, files, elems):
+    i = files.index(file)
+    for j, res in enumerate(files):
+        if m[j][i] == 1:
+            getCFile(files[i], elems)
+            getCFiles(j, m, files, elems)
+            break
+
+##
+## main
+## logic used in program to get all elements
+## params
+##      args => arguments passed by cmd line
+##
+def main(args):
+    try:
+        if len(sys.argv) > 3:
+            printErr("ERROR: bad argument given. USAGE: ./303make makefile [file]")
+            raise ValueError
+        try:
+            elems, files, cFiles = parseFile(args[0])
+            files.sort()
+            m = buildMatrice(elems, files)
+        except ValueError:
+            raise ValueError
+        if len(args) == 1:
+            displayMakfile(m, files)
+        elif len(args) == 2:
+            displayCFile(m, args[1], files, elems)
+        sys.exit(0)
+    except ValueError:
+        sys.exit(84)
+
+main(sys.argv[1:])

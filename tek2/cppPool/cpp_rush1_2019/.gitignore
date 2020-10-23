@@ -1,0 +1,44 @@
+#put it in the root
+
+#ignore lib and objects
+*.[oa]
+
+#ignore lib and objects
+*.gcno
+*.gcda
+
+#ignore default binary
+a.out
+
+#ignore vscode files
+.v*
+vgcore*
+
+#ignore shell testing
+#*.sh
+
+#ignore temp files
+*~
+
+#uncomment next line if you don t need to push main.c file
+main.c
+
+# file provided
+test_files
+array.h
+char.h
+container.h
+ex01.c
+ex02.c
+ex03.c
+ex05.c
+float.h
+int.h
+iterator.h
+new.h
+object.h
+player.c
+player.h
+point.h
+raise.h
+vertex.h

@@ -1,0 +1,34 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+import sys;
+import math;
+
+def deplace(x, y, z, x1, y1, z1, n):
+    "This function calculs velocity vector and give it"
+    x_velocity = x1 - x
+    y_velocity = y1 - y
+    z_velocity = z1 - z
+    print("The velocity vector of the ball is:\n({:.2f}, {:0.2f}, {:.2f})".format(x_velocity, y_velocity, z_velocity))
+    x_move = x_velocity * (n + 1)
+    y_move = y_velocity * (n + 1)
+    z_move = z_velocity * (n + 1)
+    x_final = x + x_move
+    y_final = y + y_move
+    z_final = z + z_move
+    print("At time t +",n,", ball coordinates will be:\n({:.2f}, {:.2f}, {:.2f})".format(x_final, y_final, z_final))
+    if (x > 0 and x_velocity < 0 and x_final < 0):
+        norm_velocity = math.sqrt((x_velocity * x_velocity) + (y_velocity * y_velocity) + (z_velocity * z_velocity))
+        angle = (math.asin(z_velocity / norm_velocity) * -1 * 180) / math.pi
+        print("The incidence angle is :\n{:.2f} degrees".format(angle))
+    else :
+        print("The ball won't reach the bat.")
+    return 0
+
+x = float(sys.argv[1])
+y = float(sys.argv[2])
+z = float(sys.argv[3])
+x1 = float(sys.argv[4])
+y1 = float(sys.argv[5])
+z1 = float(sys.argv[6])
+n = int(sys.argv[7])
+deplace(x, y, z, x1, y1, z1, n)

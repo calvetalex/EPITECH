@@ -1,0 +1,98 @@
+#!/usr/bin/python3
+
+import sys
+import math
+
+
+def usage(returnValue):
+    print("USAGE:\n\t./204ducks a")
+    print("DESCRIPTION:\n\ta\tconstant between 0 and 2.5")
+    sys.exit(returnValue)
+
+
+def density(x, y):
+    return (-x * math.exp(-y) - (4 - 3 * x) / 2 * math.exp(-2 * y) - (2 * x - 4) / 4 * math.exp(-4 * y))
+
+
+def proba(x, y):
+    return (x * math.exp(-y) + (4 - 3 * x) * math.exp(-2 * y) + (2 * x - 4) * math.exp(-4 * y))
+
+
+def ducksBack(mini, x):
+    i = 1.0
+    while(True):
+        if (density(x, i/60) - density(x, 0) > mini):
+            return (i)
+        i += 0.001
+
+
+def displayResult(value):
+    value = math.fabs(value)
+    decimal = value % 60 / 10
+    unit = value % 10
+    mini = value / 60
+    if math.floor(decimal) == 1 and math.floor(unit) == 2 and math.floor(mini) == 1:
+        unit = 1
+    print(f'{math.floor(mini):.0f}m {math.floor(decimal):.0f}{unit:.0f}s')
+
+
+def getTime(x):
+    t = 0.0
+    res = 0.0
+    p = 0.0
+    while(p < 99.9999):
+        res += (proba(x, t) / 10) * t
+        t += 0.001
+        p += proba(x, t) / 10
+    res /= 100
+    res += 1./60
+    return res
+
+
+def getDerivation(x):
+    t = 0.0
+    r = 0.0
+    d = 0
+    p = 0.0
+    while (p < 99.9999):
+        r += (proba(x, t) / 10) * t
+        t += 0.001
+        p += proba(x, t) / 10
+    r /= 100
+    r += 1./60
+    while (t > 0):
+        d += (pow((t - r),2)) * (proba(x, t) / 10)
+        t -= 0.001
+    d /= 100
+    return (d)
+
+
+def ducks(x):
+    tmp = getTime(x)
+    print(f'Average return time: {math.floor(tmp * 60 / 60):.0f}m {math.floor(tmp * 60 % 60):.0f}s')
+    tmp = getDerivation(x)
+    print(f'Standard deviation: {pow(tmp, .5):.3f}')
+    print("Time after which 50% of the ducks are back: ", end='')
+    displayResult(ducksBack(.5, x))
+    print("Time after which 99% of the ducks are back: ", end='')
+    displayResult(ducksBack(.99, x))
+    print(f'Percentage of ducks back after 1 minute: {((density(x, 1) - density(x, 0)) * 100):.1f}', end='%\n')
+    print(f'Percentage of ducks back after 2 minutes: {((density(x, 2) - density(x, 0)) * 100):.1f}', end='%\n')
+
+
+def main():
+    try:
+        if len(sys.argv) != 2:
+            usage(84)
+        if "-h" in sys.argv or "--help" in sys.argv:
+            usage(0)
+        if float(sys.argv[1]) < 0 or float(sys.argv[1]) > 2.5:
+            usage(84)
+        else:
+            ducks(float(sys.argv[1]))
+            exit(0)
+    except (ValueError):
+        usage(84)
+
+
+main()

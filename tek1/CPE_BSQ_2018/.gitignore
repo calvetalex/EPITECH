@@ -1,0 +1,13 @@
+#put it in the root
+
+#ignore lib and objects
+*.[oa]
+
+#ignore temp files
+*~
+*.v*
+*.pl
+*.txt
+
+#ignore main file if there is a specific file called main
+#main.c

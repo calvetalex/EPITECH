@@ -1,0 +1,146 @@
+#!/usr/bin/python3
+
+import sys
+import math
+
+sep = "--------------------------------------------------------------------------------"
+
+X = list()
+Y = list()
+
+def options():
+    print("USAGE:")
+    print("\t\t./202unsold a b")
+    print("DESCRIPTION:")
+    print("\t\ta\tconstant computed from the past results")
+    print("\t\tb\tconstant computed from the past results")
+
+def exit_err(msg):
+    print("ERROR: ", msg)
+    sys.exit(84)
+
+def isNumber(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
+
+def getProba(a, b, x, y):
+    quotient = ((5 * a - 150) * (5 * b - 150))
+    if quotient == 0:
+        exit_err("div by 0 not allowed.")
+    return (((a - x) * (b - y)) / quotient)
+
+def lawXY(a, b):
+    global X, Y
+    total = list()
+    print("\tX=10\tX=20\tX=30\tX=40\tX=50\tY law")
+    res = 0.0
+    y = 10
+
+    while y <= 60:
+        if y == 60:
+            print("X law", end='')
+        else:
+            print(f'Y={y}', end='')
+        x = 10
+        while x <= 50:
+            value = getProba(a, b, x, y)
+            res += value
+            if y == 60:
+                tmp = x / 10 - 1
+                count = 0
+                final = 0.0
+                while count < 5:
+                    final += total[int(tmp)]
+                    tmp += 5
+                    count += 1
+                print(f'\t{final:.3f}', end='')
+                X.append(final)
+            else:
+                total.append(value)
+                print(f'\t{value:.3f}', end='')
+            x += 10
+        if y == 60:
+            print("\t1.000")
+        else:
+            print(f'\t{res:.3f}', end='')
+            Y.append(res)
+            res = 0.0
+        y += 10
+        if y <= 60:
+            print('')
+
+def lawZ(a, b):
+    print("z\t20\t30\t40\t50\t60\t70\t80\t90\t100\np(Z=z)", end='')
+    z = 20
+    while z <= 100:
+        res = 0
+        y = 10
+        while y <= 60:
+            x = 10
+            while x <= 50:
+                if (x + y) == z and y < 60:
+                    res += getProba(a, b, x, y)
+                x += 10
+            y += 10
+        print(f'\t{res:.3f}', end='')
+        z += 10
+    print('')
+
+def variations(a, b):
+    global X, Y
+    expectedX = 0.0
+    expectedY = 0.0
+    expectedZ = 0.0
+    varX = 0
+    varY = 0
+    varZ = 0
+    x = 10
+    while x <= 50:
+        expectedX += X[int(x / 10 - 1)] * x
+        expectedY += Y[int(x / 10 - 1)] * x
+        x += 10
+    for (idx, value) in enumerate(X):
+        varX += math.pow(((idx + 1) * 10 - expectedX) , 2) * value
+    for (idx, value) in enumerate(Y):
+        if idx != 5:
+            varY += math.pow(((idx + 1) * 10 - expectedY), 2) * value
+    expectedZ = expectedX + expectedY
+    varZ = varX + varY
+    print(f'expected value of X:\t{expectedX:.1f}')
+    print(f'variance of X:\t\t{varX:.1f}')
+    print(f'expected value of Y:\t{expectedY:.1f}')
+    print(f'variance of Y:\t\t{varY:.1f}')
+    print(f'expected value of Z:\t{expectedZ:.1f}')
+    print(f'variance of Z:\t\t{varZ:.1f}')
+
+def unsold(a, b):
+    print(sep)
+    lawXY(a ,b)
+    print(sep)
+    lawZ(a , b)
+    print(sep)
+    variations(a, b)
+    print(sep)
+
+def main():
+    if len(sys.argv) == 2:
+        arg = sys.argv[1]
+        if arg == "-h" or arg == "--help":
+            options()
+        else:
+            exit_err("bad argv.")
+    elif len(sys.argv) == 3:
+        a = int(sys.argv[1]) if isNumber(sys.argv[1]) == True else exit_err("a must be in int")
+        b = int(sys.argv[2]) if isNumber(sys.argv[2]) == True else exit_err("b must be an int")
+        if a <= 50 or b <= 50:
+            exit_err("args must be greater than 50")
+        else:
+            unsold(a, b)
+            exit(0)
+    else:
+        exit_err("bad input, try './202unsold -h' to find out how to use this program.")
+
+main()

@@ -1,0 +1,215 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import math
+import sys
+
+def exit_err(msg):
+    print("ERROR: ", msg)
+    sys.exit(84)
+
+def options():
+    print("USAGE\n\t./201yams d1 d2 d3 d4 d5 c")
+    print("DESCRIPTION")
+    print("\td1\tvalue of the first die (0 if not thrown)")
+    print("\td2\tvalue of the second die (0 if not thrown)")
+    print("\td3\tvalue of the third die (0 if not thrown)")
+    print("\td4\tvalue of the fourth die (0 if not thrown)")
+    print("\td5\tvalue of the fifth die (0 if not thrown)")
+    print("\tc\texpected combination")
+    sys.exit(0)
+
+def isNumber(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
+
+def isInList(i, l):
+    if i in l:
+        return True
+    return False
+
+def getOccurency(toSearch, digits):
+    if len(digits) == 0:
+        return 0
+    return digits.count(toSearch)
+
+def binomial(x, y):
+    binom = 0
+    try:
+        binom = (math.factorial(x) / (math.factorial(y) * math.factorial(x - y))) * math.pow(1.0 / 6.0, y) * math.pow(5.0 / 6.0, x - y)
+    except ValueError:
+        binom = 0
+    return binom
+
+def displayResult(comb, per, nb):
+    print(f'Chances to get a {nb} {comb}: {per:.2f}%')
+    exit(0)
+
+def parsArgv():
+    digits = []
+    for i in range (1, 6):
+        digits.append(int(sys.argv[i]))
+    return digits
+
+def getOption(opt):
+    opt = opt.split('_')
+    if len(opt) < 2:
+        exit_err("bad option")
+    if not opt[1]:
+        exit_err("bad combination")
+    elif opt[0] != "full" and len(opt) > 2:
+        exit_err("bad combination")
+    elif isNumber(opt[1]) == False:
+        exit_err("option must be number")
+    opt[1] = int(opt[1])
+    if opt[0] == "full":
+        if len(opt) != 3:
+            exit_err("if combination is full: expect full_A_B")
+        elif isNumber(opt[2]) == False:
+            exit_err("options must be numbers")
+        elif int(opt[2]) < 0 and int(opt[2]) > 6:
+            exit_err("options must be numbers")
+        opt[2] = int(opt[2])
+    return opt
+
+def pair(digits, opt):
+    nbOfTime = getOccurency(opt, digits)
+    res = 100
+    if nbOfTime < 2:
+        res = 0
+        nbDigits = 5 - nbOfTime
+        nbOpt = 2 - nbOfTime
+        i = 0
+        while i < nbOpt and i < (nbDigits + 1):
+            res += binomial(nbDigits, i)
+            i += 1
+        res = (1 - res) * 100
+    displayResult("pair", res, opt)
+
+
+def three(digits, opt):
+    nbOfTime = getOccurency(opt, digits)
+    res = 100
+
+    if nbOfTime < 3:
+        res = 0
+        nbDigits = 5 - nbOfTime
+        nbOpt = 3 - nbOfTime
+        i = 0
+        while i < nbOpt and i < (nbDigits + 1):
+            res += binomial(nbDigits, i)
+            i += 1
+        res = (1 - res) * 100
+    displayResult("three-of-a-kind", res, opt)
+
+def four(digits, opt):
+    nbOfTime = getOccurency(opt, digits)
+    res = 100
+
+    if nbOfTime < 4:
+        res = 0
+        nbDigits = 5 - nbOfTime
+        nbOpt = 4 - nbOfTime
+        i = 0
+        while i < nbOpt and i < (nbDigits + 1):
+            res += binomial(nbDigits, i)
+            i += 1
+        res = (1 - res) * 100
+    displayResult("four-of-a-kind", res, opt)
+
+def full(digits, opt, opt1):
+    dice1 = 3
+    dice2 = 2
+
+    for i in digits:
+        if i == opt:
+            dice1 -= 1
+        if dice1 == 0:
+            break
+    for i in digits:
+        if i == opt1:
+            dice2 -= 1
+        if dice2 == 0:
+            break
+    if dice1 > dice2:
+        res = math.factorial(5 - (2 - dice1) - (3 - dice2)) / (math.factorial(dice1) * math.factorial(5 - (2 - dice1) - (3 - dice2) - dice1))
+    else:
+        res = math.factorial(5 - (2 - dice1) - (3 - dice2)) / (math.factorial(dice2) * math.factorial(5 - (2 - dice1) - (3 - dice2) - dice2))
+    maxDice = dice1 + dice2
+    res *= 1.0 / math.pow(6.0, maxDice)
+    res *= 100
+    print(f'Chances to get a {opt} full of {opt1}: {res:.2f}%')
+    exit(0)
+
+def straight(digits, opt):
+    nbAdded = 0
+    suite = []
+    if opt == 6:
+        for i in digits:
+            if (i > 1 and i <= 6) and (i in suite) == False:
+                suite.append(i)
+                nbAdded += 1
+    elif opt == 5:
+        for i in digits:
+            if (i > 0 and i <= 5) and (i in suite) == False:
+                suite.append(i)
+                nbAdded += 1
+    else:
+        exit_err("bad input for straight option")
+    res = (1 / math.pow(6, (5 - nbAdded))) * math.factorial(5 - nbAdded) * 100
+    displayResult("straight", res, opt)
+
+def yams(digits, opt):
+    nbOfTime = getOccurency(opt, digits)
+    res = 100
+
+    if nbOfTime < 5:
+        res = 0
+        x = 1.0 / math.pow(6.0, (5 - nbOfTime))
+        res = x * 100
+    displayResult("yams", res, opt)
+
+def rollDices(opt, digits):
+    switcher = {
+        "pair" : pair,
+        "three": three,
+        "four": four,
+        "full": full,
+        "straight": straight,
+        "yams": yams
+    }
+    try:
+        if opt[0] != "full":
+            switcher.get(opt[0], -1)(digits, opt[1]);
+        else:
+            switcher.get(opt[0], -1)(digits, opt[1], opt[2]);
+    except TypeError:
+        exit_err("Invalid combination: pair_X, three_X, four_X, full_X_Y, straight_X and yams_X are avaible (replace X by your nb)")
+
+
+def main():
+    if len(sys.argv) == 2:
+        arg = sys.argv[1]
+        if (arg == "-h"):
+            options()
+        else:
+            exit_err("bad argv.")
+    elif len(sys.argv) == 7:
+        dNotThrown = 0
+        for i in range (1, 6):
+            if isNumber(sys.argv[i]) == False:
+                exit_err("bad input.")
+            elif int(sys.argv[i]) == 0:
+                dNotThrown += 1
+            elif int(sys.argv[i]) < 0 or int(sys.argv[i]) > 6:
+                exit_err("bad input.")
+        if dNotThrown != 0 and dNotThrown != 5:
+            exit_err("bad input.")
+        rollDices(getOption(sys.argv[6]), parsArgv())
+    else:
+        exit_err("bad input, try './201yams -h' to find out how to use this program.")
+
+main()

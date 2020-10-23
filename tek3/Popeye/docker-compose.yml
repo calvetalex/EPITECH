@@ -1,0 +1,78 @@
+version: "3.5"
+
+##
+## popeye project
+##
+
+services:
+    ## front end
+    poll:
+        build:
+            context: ./poll
+            dockerfile: Dockerfile
+        restart: "always"
+        ports:
+            - 5000:80
+        networks:
+            - "poll-tier"
+        environment:
+            FLASK_ENV: development
+            BACK: "redis"
+    ## redis image
+    redis:
+        image: "redis:alpine"
+        restart: "always"
+        ports:
+            - 6379:80
+        networks:
+            - "poll-tier"
+            - "back-tier"
+
+    ## backend
+    result:
+        build:
+            context: ./result
+            dockerfile: Dockerfile
+        restart: "always"
+        ports:
+            - 5001:80
+        networks:
+            - "result-tier"
+        environment:
+            POSTGRE_USER: postgres
+            POSTGRE_PASSWORD: password
+            DB_HOSTNAME: db
+
+    ## java app
+    worker:
+        build:
+            context: ./worker
+            dockerfile: Dockerfile
+        restart: "always"
+        networks:
+            - "back-tier"
+        environment:
+            USER: postgres
+            PWD: password
+
+    ## database
+    db:
+        image: "postgres"
+        restart: "always"
+        volumes:
+            - ./schema.sql:/docker-entrypoint-initdb.d/init.sql
+            - ./db-data:/var/lib/mysql
+        networks:
+            - "result-tier"
+            - "back-tier"
+        environment:
+            POSTGRE_USER: postgres
+            POSTGRE_PASSWORD: password
+
+networks:
+    poll-tier:
+        name: "poll-tier"
+    result-tier:
+        name: "result-tier"
+    back-tier:
+        name: "back-tier"

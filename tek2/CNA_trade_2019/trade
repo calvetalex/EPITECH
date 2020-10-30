@@ -1,0 +1,194 @@
+#!/usr/bin/env python3
+
+import sys
+import math
+import fileinput
+
+conf = {
+    "player_names": "",
+    "your_bot": "",
+    "timebank": 0,
+    "time_per_move": 0,
+    "candle_interval": 0,
+    "candle_format": [],
+    "candles_total": 0,
+    "candles_given": 0,
+    "initial_stack": 0,
+    "transaction_fee_percent": 0
+}
+
+
+def log(msg = "no move"):
+    sys.stderr.flush()
+    print(f"Trade log: {msg:s}", file=sys.stderr, end='')
+    sys.stderr.flush()
+
+
+def setConfig(line):
+    if line[1] == "candle_format":
+        conf["candle_format"] = line[2].strip().split(',')
+        return
+    conf[line[1]] = line[2].split(',')
+
+def parseInfos(stack):
+    try:
+        infos = stack.strip().split(',')
+        btc, eth, usd = 0, 0, 0
+        for i in infos:
+            currentStack = i.split(':')
+            if "BTC" in currentStack:
+                btc = float(currentStack[1])
+            elif "ETH" in currentStack:
+                eth = float(currentStack[1])
+            elif "USDT" in currentStack:
+                usd = float(currentStack[1])
+        return eth, btc, usd
+    except ValueError:
+        return 0, 0, 0
+
+def parseCandle(candle):
+    finalCdl = [
+        {"close": 0.0, "volume": 0.0},
+        {"close": 0.0, "volume": 0.0},
+        {"close": 0.0, "volume": 0.0}
+    ]
+    sep = candle.strip().split(';')
+    try:
+        for i in range(3):
+            for j, val in enumerate(sep[i].split(',')):
+                if conf["candle_format"][j] == "close":
+                    finalCdl[i]["close"] = float(val)
+                elif conf["candle_format"][j] == "volume":
+                    finalCdl[i]["volume"] = float(val)
+                elif conf["candle_format"][j] == "high":
+                    finalCdl[i]["high"] = float(val)
+                elif conf["candle_format"][j] == "low":
+                    finalCdl[i]["low"] = float(val)
+                elif conf["candle_format"][j] == "open":
+                    finalCdl[i]["open"] = float(val)
+    except (ValueError, IndexError):
+        return [{"close": 0.0, "volume": 0.0}, {"close": 0.0, "volume": 0.0}, {"close": 0.0, "volume": 0.0}]
+    return finalCdl
+
+def stockCdl(cdls, newCdl):
+    fmtCdl = parseCandle(newCdl)
+    cdls["BTC_ETH"] = [fmtCdl[0]] + cdls["BTC_ETH"]
+    cdls["USDT_BTC"] = [fmtCdl[1]] + cdls["USDT_BTC"]
+    cdls["USDT_ETH"] = [fmtCdl[2]] + cdls["USDT_ETH"]
+    if len(cdls["BTC_ETH"]) > 15:
+        del cdls["BTC_ETH"][-1]
+    if len(cdls["USDT_BTC"]) > 15:
+        del cdls["USDT_BTC"][-1]
+    if len(cdls["USDT_ETH"]) > 15:
+        del cdls["USDT_ETH"][-1]
+    return cdls, fmtCdl
+
+
+def calcRsi(cdls):
+    stats = {"gain": [], "loss": []}
+    for i, cdl in enumerate(cdls):
+        if i < 14:
+            change = cdl["close"] - cdls[i + 1]["close"]
+            stats["loss"].append(-change) if change < 0 else stats["gain"].append(change)
+    try:
+        avgGain = sum(stats["gain"]) / 14
+        avgLoss = sum(stats["loss"]) / 14
+        rs = avgGain / avgLoss if avgLoss > 0 else avgGain
+        rsi = 100 - (100 / (1 + rs))
+        return rsi
+    except (ZeroDivisionError, IndexError):
+        return 0
+
+def buyAction(cdl_price, stack):
+    try:
+        maximum = stack / float(cdl_price)
+        return maximum
+    except (ValueError, ZeroDivisionError):
+        return 0
+
+def getSellPrice(cdl_price, stack):
+    try:
+        sell_price = stack * float(cdl_price)
+        return sell_price
+    except ValueError:
+        return 0
+
+
+def actions(cdls, current, lastSpent, eth, btc, usd):
+    log("Action cmd detected....\n")
+    sellingPrice = buyingPrice = current[2]["close"]
+    rsiBTCETH = calcRsi(cdls["BTC_ETH"])
+    rsiUSDBTC = calcRsi(cdls["USDT_BTC"])
+    rsiUSDETH = calcRsi(cdls["USDT_ETH"])
+    log(f"BTCETH: {rsiBTCETH}, USDBTC: {rsiUSDBTC}, USDETH: {rsiUSDETH}\n")
+    if btc > 0 and btc > usd and getSellPrice(sellingPrice, btc) > lastSpent and btc > usd:
+        print(f"sell USDT_BTC {btc}")
+        log(f"Sell price {lastSpent} | RSI {rsiUSDBTC}\n")
+    elif eth > 0 and getSellPrice(sellingPrice, eth) > lastSpent * 2 and eth > usd:
+        print(f"sell USDT_BTC {eth}")
+        log(f"Sell price {lastSpent} | RSI {rsiUSDETH}\n")
+    elif eth > 0 and getSellPrice(sellingPrice, eth) > lastSpent * 2 and eth > btc:
+        print(f"sell USDT_BTC {eth}")
+        log(f"Sell price {lastSpent} | RSI {rsiBTCETH}\n")
+    elif rsiUSDBTC < 40:
+        maxBuy = buyAction(buyingPrice, usd)
+        if maxBuy > 0:
+            print(f"buy USDT_BTC {maxBuy}")
+            lastSpent = maxBuy * buyingPrice
+            log(f"Buy price: {lastSpent} | RSI {rsiUSDBTC}\n")
+        else:
+            log("no move\n")
+            print("pass")
+    elif rsiUSDETH < 20 and eth > usd:
+        maxBuy = buyAction(buyingPrice, usd)
+        if maxBuy > 0:
+            print(f"buy USDT_ETH {maxBuy}")
+            lastSpent = maxBuy * buyingPrice
+            log(f"Buy price: {lastSpent} | RSI {rsiUSDETH}\n")
+        else:
+            log("no move\n")
+            print("pass")
+    elif rsiBTCETH < 20 and eth > btc:
+        maxBuy = buyAction(buyingPrice, btc)
+        if maxBuy > 0:
+            print(f"buy USDT_ETH {maxBuy}")
+            lastSpent = maxBuy * buyingPrice
+            log(f"Buy price: {lastSpent} | RSI {rsiBTCETH}\n")
+        else:
+            log("no move\n")
+            print("pass")
+    else:
+        log("no move\n")
+        print("pass")
+    sys.stdout.flush()
+    log("Action done!\n")
+    return lastSpent
+
+def main():
+    eth = btc = usd = 0
+    cdls = {
+        "BTC_ETH": [],
+        "USDT_BTC": [],
+        "USDT_ETH": []
+        }
+    current = []
+    lastSpent = 0
+    for line in fileinput.input():
+        currentLine = line.split(' ')
+        if currentLine[0] == "settings":
+            setConfig(currentLine)
+        elif currentLine[0] == "update":
+            try:
+                if currentLine[2] == "next_candles":
+                    cdls, current = stockCdl(cdls, currentLine[3])
+                elif currentLine[2] == "stacks":
+                    eth, btc, usd = parseInfos(currentLine[3])
+            except (IndexError, ValueError):
+                continue
+        elif currentLine[0] == "action":
+            lastSpent = actions(cdls, current, lastSpent, eth, btc, usd)
+        else:
+            log(f"> {currentLine:s}\n")
+    return 0
+
+main()

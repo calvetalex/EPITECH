@@ -1,0 +1,142 @@
+#!/usr/bin/env python3
+
+import sys
+import os
+import heapq
+from math import inf
+
+game = []
+ghost = None
+
+class PacmanError(Exception):
+    pass
+
+class Tile:
+    def __init__(self, distance, prev, x, y, removed=False):
+        self.dist = distance
+        self.prev = prev
+        self.x = x
+        self.y = y
+        self.removed = removed
+    def __lt__(self, other):
+        return (self.dist, self.prev) < (other.dist, other.prev)
+    def __gt__(self, other):
+        return (self.dist, self.prev) > (other.dist, other.prev)
+    def __repr__(self):
+        return "Tile()"
+    def __str__(self):
+        return "("+ self.x +", " + self.y +"): dist = " + self.dist + " and previous data was " + self.prev
+
+
+def printErr(msg = "ERROR: abort program"):
+    print(msg, file=sys.stderr)
+
+
+def parseFile(filename):
+    global game, ghost
+    pacman = None
+    i = 0
+    lines = list()
+    try:
+        if os.stat(filename).st_size == 0:
+            raise ValueError
+        with open(filename, 'r') as f:
+            lines = list(filter(lambda x: len(x) > 0, [(line[:-1] if line[-1] == '\n' else line) for line in f]))
+        if len(lines) == 0:
+            raise ValueError
+        for line in lines[1:]:
+            if len(line) != len(lines[0]):
+                raise IndexError
+        for y, line in enumerate(lines):
+            r= ''
+            for x, c in enumerate(line):
+                if c == 'P':
+                    pacman= (x, y)
+                elif c == 'F':
+                    ghost = (x, y)
+                elif c != '0' and c != '1':
+                    raise IndexError
+                r += c
+            game.append(r)
+    except FileNotFoundError:
+        printErr("ERROR: file not found")
+        raise PacmanError
+    except IndexError:
+        printErr("ERROR: file is not formated as expected: must be a rectangle and use 0 for empty square, 1 for wall, F for the ghost and P for pacman")
+        raise PacmanError
+    except ValueError:
+        printErr("ERROR: file is empty")
+        raise PacmanError
+    if ghost is None:
+        printErr("ERROR: no ghost found in file")
+        raise PacmanError
+    if pacman is None:
+        printErr("ERROR: pacman not found in file")
+        raise PacmanError
+
+
+def checkTile(tile, x, y, t, pacmanQueue, pacmanQueue_map):
+    global game
+    if x < 0 or y < 0 or x >= len(game[y]) or y >= len(game):
+        return False
+    if game[y][x] == 'P':
+        return True
+    if game[y][x] == '0':
+        d = tile.dist + 1
+        if d < pacmanQueue_map[(x, y)].dist:
+            pacmanQueue_map[(x, y)].removed = True
+            tile = Tile(d, t, x, y)
+            heapq.heappush(pacmanQueue, tile)
+            pacmanQueue_map[(x, y)] = tile
+        return False
+
+
+def djikstra(c1, c2):
+    global game, ghost
+    pacmanQueue = []
+    pacmanQueue_map = {}
+    t = 0
+    try:
+        for y in range(len(game)):
+            for x in range(len(game[y])):
+                item = Tile(0 if (x, y) == ghost else inf, inf, x, y)
+                heapq.heappush(pacmanQueue, item)
+                pacmanQueue_map[(x, y)] = item
+        while pacmanQueue:
+            p = heapq.heappop(pacmanQueue)
+            if p.removed:
+                continue
+            if checkTile(p, p.x, p.y - 1, t, pacmanQueue, pacmanQueue_map) or checkTile(p, p.x + 1, p.y, t + 1, pacmanQueue, pacmanQueue_map) or checkTile(p, p.x, p.y + 1, t + 2, pacmanQueue, pacmanQueue_map) or checkTile(p, p.x - 1, p.y, t + 3, pacmanQueue, pacmanQueue_map):
+                break
+            t += 4
+        for y, line in enumerate(game):
+            for x, c in enumerate(line):
+                if c == '0':
+                    d = pacmanQueue_map[(x, y)].dist
+                    c = c2 if d == inf else str(d%10)
+                elif c == '1':
+                    c = c1
+                print(c, end='')
+            print()
+    except IndexError:
+        printErr("ERROR: error in map")
+        raise PacmanError
+
+
+def main(args):
+    global game
+    try:
+        if (len(args) != 3):
+            printErr("ERROR: bad args given. USAGE: ./304pacman file c1 c2")
+            raise PacmanError
+        c1, c2 = args[1], args[2]
+        if len(c1) != 1 or len(c2) != 1 or c1 == c2:
+            printErr("ERROR: char is expected for args c1 and c2, must be not equal")
+            raise PacmanError
+        parseFile(args[0])
+        djikstra(c1, c2)
+        sys.exit(0)
+    except PacmanError:
+        sys.exit(84)
+
+main(sys.argv[1:])

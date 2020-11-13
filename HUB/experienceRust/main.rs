@@ -21,6 +21,7 @@ fn game_logic() {
     let mut game_tab = ["1", "2", "3",
                         "4", "5", "6",
                         "7", "8", "9"];
+    let win: u8 ;
 
     println!("Player 1 : X");
     println!("Player 2 : O\n");
@@ -33,9 +34,10 @@ fn game_logic() {
             play(&mut game_tab, actual_player);
         }
     }
-    if is_win(&mut game_tab).1 == 0 {
+    win = is_win(&mut game_tab).1;
+    if win == 0 {
         println!("\nThe game is finished, EQUALITY !");
-    } else if is_win(&mut game_tab).1 == 1 {
+    } else if win == 1 {
         println!("\nThe game is finished, CONGRATULATIONS Player 1 (X) for your win !");
     } else {
         println!("\nThe game is finished, CONGRATULATIONS Player 2 (O) for your win !");
@@ -55,11 +57,12 @@ fn play(game_tab: &mut [&str; 9], actual_player: u8) {
             Ok(num) => num,
             Err(_) => continue,
         };
-        index -= 1;
-        if index >= game_tab.len() {
+        if index > game_tab.len() || index <= 0 {
             println!("Case out of board !");
             continue;
-        } else if game_tab[index].eq("X") || game_tab[index].eq("O") {
+        }
+        index -= 1;
+        if game_tab[index].eq("X") || game_tab[index].eq("O") {
             println!("This case is already used !");
             continue;
         } else {
@@ -90,7 +93,7 @@ fn check_three(tab: &mut [&str; 9], char: &str) -> bool {
         || tab[1] == char && tab[1] == tab[4] && tab[4] == tab[7]
         || tab[2] == char && tab[2] == tab[5] && tab[5] == tab[8]
         || tab[0] == char && tab[0] == tab[4] && tab[4] == tab[8]
-        || tab[2] == char && tab[2] == tab[4] && tab[4] == tab[8] {
+        || tab[2] == char && tab[2] == tab[4] && tab[4] == tab[6] {
             true
         } else {
             false

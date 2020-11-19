@@ -33,7 +33,7 @@ setup:
 
 run:	setup
 ifneq ("$(wildcard ./myApp)", "")
-	@[ -z "$(cmp myApp.py myApp.py.save)" ] && (echo "Nothing to do") || (cp myApp.py myApp.py.save && cp myApp.py $(EXECUTABLE))
+	@cmp -s myApp.py myApp.py.save; RETR=$$?; if [ $$RETR -eq 0 ]; then echo "Nothing to do"; else cp myApp.py myApp.py.save && cp myApp.py $(EXECUTABLE); fi
 	${PYTHON} ${EXECUTABLE}
 else
 	@echo "Making app..."

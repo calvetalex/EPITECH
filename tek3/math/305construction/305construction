@@ -1,0 +1,130 @@
+#!/usr/bin/env python3
+
+import sys
+import os
+import math
+
+
+debug = False
+
+
+class ConstructionError(Exception):
+    pass
+
+
+class Construction():
+    dictionary = {}
+    tmp = {}
+    def __init__(self, csv):
+        for l in csv:
+            l = l.split(';')
+            self.dictionary[l[0]] = {
+                "taskName": l[1],
+                "duration": int(l[2]),
+                "dependencies": l[3:],
+                "begin": 0,
+                "end": 0,
+                "required": [[]]
+            }
+
+
+    def generatePlanning(self):
+        global debug
+        if debug:
+            print("[DEBUG] Generation called")
+        def setRequirement(original, rule):
+            for dependency in self.dictionary[rule]["dependencies"]:
+                self.dictionary[original]["required"][-1].append(dependency)
+                setRequirement(original, dependency)
+            self.dictionary[original]["required"].append([])
+        for k in self.dictionary.keys():
+            setRequirement(k, k)
+            self.dictionary[k]["required"] = [d for d in self.dictionary[k]["required"] if d]
+        if debug:
+            print(f'[DEBUG]{self.dictionary}\n\n[DEBUG] get duration')
+        try:
+            for i in self.dictionary:
+                tmp = 0
+                duration = 0
+                for d in self.dictionary[i]["required"]:
+                    for e in d:
+                        duration += self.dictionary[e]["duration"]
+                    if duration > tmp:
+                        tmp = duration
+                    duration = 0
+                self.dictionary[i]["begin"] = tmp
+                if debug:
+                    print(f'{i} {self.dictionary[i]["begin"]}')
+            for i in self.dictionary:
+                self.tmp[i] = self.dictionary[i]["begin"]
+            self.tmp = [(k, self.tmp[k]) for k in sorted(self.tmp, key=self.tmp.get)]
+            self.duration = max(i[1] + self.dictionary[i[0]]["duration"] for i in self.tmp)
+            tmp = {}
+            for i in self.tmp:
+                tmp[i[0]] = i[1]
+            if debug:
+                print("[DEBUG] get end")
+            for key in self.dictionary:
+                deadline = self.duration
+                for name in self.dictionary:
+                    if (deadline > tmp[name] and key in self.dictionary[name]["dependencies"]):
+                        deadline = tmp[name]
+                self.dictionary[key]["end"] = deadline - (self.dictionary[key]["begin"] + self.dictionary[key]["duration"])
+                if debug:
+                    print(f'[DEBUG] deadline: {deadline} duration: {self.dictionary[key]["begin"] + self.dictionary[key]["duration"]} task fluctuation: {self.dictionary[key]["end"]}')
+        except ValueError:
+            raise ConstructionError
+        except IndexError:
+            raise ConstructionError
+        if debug:
+            print("[DEBUG] Generation done")
+
+
+    def printPlanning(self):
+        print(f'Total duration of construction: {self.duration} week{"s" if self.duration > 1 else ""}\n')
+        for i in self.tmp:
+            print(f'{i[0]} must begin {("between t=" + str(i[1]) + " and t=" + str(i[1] + self.dictionary[i[0]]["end"])) if self.dictionary[i[0]]["end"] != 0 else ("at t=" + str(i[1]))}')
+        print()
+        for i in self.tmp:
+            print("{}\t({})\t{}{}".format(i[0], self.dictionary[i[0]]["end"], ' ' * i[1], '=' * self.dictionary[i[0]]["duration"]))
+
+
+def abortProgram(msg = "ERROR: program abort"):
+    print(msg, file=sys.stderr)
+    sys.exit(84)
+
+
+def readFile(filename):
+    try:
+        if os.stat(filename).st_size == 0:
+            abortProgram("ERROR: file is empty")
+    except FileNotFoundError:
+        abortProgram("ERROR: file not found")
+    try:
+        with open(filename, 'r') as f:
+            lines = list(filter(lambda x: len(x) > 0, [(line[:-1] if line[-1] == '\n' else line) for line in f]))
+        return lines
+    except IndexError:
+        abortProgram("ERROR: file format not supported. Must be a csv")
+    except ValueError:
+        abortProgram("ERROR: line must be like [shortname];[task name];[duration](;[dependencies])")
+
+
+def main():
+    global debug
+    if len(sys.argv) != 2:
+        if len(sys.argv) == 3 and sys.argv[2] == "--debug":
+            debug = True
+        else:
+            abortProgram("ERROR: invalid argument. USAGE: ./305construction file [--debug]")
+    myConstruction = Construction(readFile(sys.argv[1]))
+    try:
+        myConstruction.generatePlanning()
+    except ConstructionError:
+        abortProgram("ERROR: an error occured during planning generation. Please verify your config file and retry")
+    myConstruction.printPlanning()
+
+
+if __name__ == "__main__":
+    main()
+    sys.exit(0)

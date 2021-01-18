@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: result-ingress
+  namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - host: result
+      http:
+        paths:
+          - path: /resultpath
+            backend:
+              service:
+                name: result
+                port:
+                  number: 80

@@ -1,0 +1,14 @@
+apiVersion: apps/V1
+kind: Service
+metadata:
+  name: redis
+  namespace: default
+  labels:
+    app: redis
+spec:
+  restartPolicy: Always
+  selector:
+    app: redis
+  ports:
+    - port: 6379
+      targetPort: 6379

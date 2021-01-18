@@ -1,0 +1,14 @@
+apiVersion: apps/v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pv-claim
+  namespace: default
+  labels:
+    app: postgres
+spec:
+  storageClassName: manual
+  resources:
+    requests:
+      storage: 3Gi
+  accessModes:
+    - ReadWriteMany

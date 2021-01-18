@@ -1,0 +1,7 @@
+apiVersion: apps/v1
+kind: ConfigMap
+metadata:
+  name: redis-config-map
+  namespace: default
+data:
+  REDIS_HOST: "redis"

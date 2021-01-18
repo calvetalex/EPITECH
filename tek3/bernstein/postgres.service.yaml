@@ -1,0 +1,14 @@
+apiVersion: apps/V1
+kind: Service
+metadata:
+  name: postgres
+  namespace: default
+  labels:
+    app: postgres
+spec:
+  restartPolicy: Always
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432

@@ -1,0 +1,122 @@
+#!/usr/bin/env python3
+
+import sys
+import math
+
+USAGE = '''
+USAGE:
+    ./307multigrains n1 n2 n3 n4 po pw pc pb ps
+DESCRIPTION:
+    n1    number of tons of fertilizer F1
+    n2    number of tons of fertilizer F2
+    n3    number of tons of fertilizer F3
+    n4    number of tons of fertilizer F4
+    po    price of one unit of oat
+    pw    price of one unit of wheat
+    pc    price of one unit of corn
+    pb    price of one unit of barley
+    ps    price of one unit of soy
+'''
+
+def printErr(msg = "An error occured"):
+    print(msg, file=sys.stderr)
+
+def help(status = 0):
+    print(USAGE)
+    sys.exit(0 if status == 0 else 84)
+
+def printRes(finalList, P, total):
+    print(f'Oat: {finalList[0]} units at ${P[0]:.0f}/unit')
+    print(f'Wheat: {finalList[1]} units at ${P[1]:.0f}/unit')
+    print(f'Corn: {finalList[2]} units at ${P[2]:.0f}/unit')
+    print(f'Barley: {finalList[3]} units at ${P[3]:.0f}/unit')
+    print(f'Soy: {finalList[4]} units at ${P[4]:.0f}/unit')
+    print()
+    print(f'Total production value: ${total:.2f}')
+
+def createMatrix(N, P):
+    M = [
+        [1, 0, 1, 0, 2],
+        [1, 2, 0, 1, 0],
+        [2, 1, 0, 1, 0],
+        [0, 0, 3, 1, 2],
+        list(map(lambda x: x * -1, P)) + ([0] * 5)
+    ]
+    for i in range(0, 4):
+        for j in range(0, 4):
+            M[i].append(1 if j == i else 0)
+        M[i].append(N[i])
+    return M
+
+def getPivot(M):
+    maxY = len(M)
+    maxX = len(M[0])
+    L = M[maxY - 1][:5]
+    pivotY, pivotX = -1, -1
+    if min(L) >= 0:
+        return pivotY, pivotX
+    pivotX = L.index(min(L))
+    m = 99999999999999
+    for i in range(0, maxY - 1):
+        if M[i][maxX - 1]:
+            if M[i][pivotX] > 0 and (m > M[i][maxX - 1] / M[i][pivotX] > 0):
+                pivotY = i
+                m = M[i][maxX - 1] / M[i][pivotX]
+        elif m > M[i][pivotX] and M[i][pivotX] > 0:
+            pivotY = i
+            m = M[i][maxX - 1] / M[i][pivotX]
+    return pivotY, pivotX
+    
+def pivot(M, pivotY, pivotX):
+    pivot = M[pivotY][pivotX]
+    M[pivotY] = list(map(lambda x: x / pivot, M[pivotY]))
+    maxY = len(M)
+    maxX = len(M[0])
+    for i in range (0, maxY):
+        if i != pivotY:
+            km = M[i][pivotX]
+            for j in range(0, maxX):
+                M[i][j] -= km * M[pivotY][j]
+
+def loop(M):
+    products = [-1] * 4
+    while 1:
+        pivotY, pivotX = getPivot(M)
+        if pivotY == -1 or pivotX == -1:
+            break
+        pivot(M, pivotY, pivotX)
+        products[pivotY] = pivotX
+    return products
+
+def getRes(M, P, loopRes):
+    resList = ["0"] * 5
+    resTotal = 0
+    for i in range(0, 4):
+        if loopRes[i] != -1:
+            if M[i][-1] != 0:
+                resList[loopRes[i]] = f"{M[i][-1]:.2f}"
+                resTotal += M[i][-1] * P[loopRes[i]]
+            else:
+                resList[loopRes[i]] = f"{M[i][-1]:.0f}"
+    return resList, resTotal
+
+
+def main(N, P):
+    if any(map(lambda x: x < 0, N)):
+        printErr("Quantity of fertilizer can't be negative")
+        sys.exit(84)
+    if any(map(lambda x: x < 0, P)):
+        printErr("Prices can't be negative")
+        sys.exit(84)
+    print(f'Ressources: {N[0]:.0f} F1, {N[1]:.0f} F2, {N[2]:.0f} F3, {N[3]:.0f} F4', end='\n\n')
+    M = createMatrix(N, P)
+    finalList, total = getRes(M, P, loop(M))
+    printRes(finalList, P, total)
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 10:
+        if "-h" in sys.argv or "--help" in sys.argv:
+            help(0)
+        help(1)
+    main(list(map(float, sys.argv[1:5])), list(map(float, sys.argv[5:])))
